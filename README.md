@@ -1,6 +1,5 @@
 # ckanext-preflow
 
-[![Tests](https://github.com//ckanext-preflow/workflows/Tests/badge.svg?branch=main)](https://github.com//ckanext-preflow/actions)
 
 A CKAN extension that integrates [Prefect](https://www.prefect.io/) data workflows with CKAN resources. This extension allows you to trigger, monitor, and display the status and logs of Prefect data ingestion flows directly from the CKAN interface.
 
