@@ -1,0 +1,14 @@
+# preflow-js:
+#   filter: rjsmin
+#   output: ckanext-preflow/%(version)s-preflow.js
+#   contents:
+#     - js/preflow.js
+#   extra:
+#     preload:
+#       - base/main
+
+# preflow-css:
+#   filter: cssrewrite
+#   output: ckanext-preflow/%(version)s-preflow.css
+#   contents:
+#     - css/preflow.css
