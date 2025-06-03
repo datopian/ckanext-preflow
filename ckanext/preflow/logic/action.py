@@ -18,35 +18,18 @@ def preflow_submit(context: Context, data_dict: dict[str, str]) -> dict[str, str
 
     :param context: The context dictionary, usually containing user and authorization information.
     :type context: dict
-    :param data_dict: Dictionary of parameters for the flow run.
-        Must include:
-            - source_url (str): URL of the source data to ingest.
-            - ckan_url (str): Base URL of the CKAN instance.
-            - organization_id (str): ID of the CKAN organization.
-            - resource (dict): CKAN resource metadata, including:
-                - id (str): Resource ID.
-                - name (str): Resource name.
-                - schema (dict or None): Schema definition.
-                - format (str): Resource format (e.g., 'csv', 'json').
-                 - flow_parameters (dict): Additional Prefect flow parameters.
-            - run_asynchronous (bool): Submit flow run asynchronously.
-            - prefect_labels (list): Prefect agent labels.
-            - prefect_api_key (str): Prefect Cloud API key.
-            - prefect_flow_id (str): Prefect flow ID to trigger.
-        Optional:
-            - bigquery_config (dict): BigQuery configuration.
-
+    :param data_dict: Resource dictionary with parameters for the flow run.
     :returns: A dictionary with Prefect flow run metadata and status.
     :rtype: dict
     """
     log.debug("Submitting Prefect flow with parameters: %s", data_dict)
     tk.check_access("preflow_submit", context, data_dict)
 
-    if (data_dict.get("url_type") == "datastore") or (
-        "_datastore_only_resource" in data_dict.get("url")
+    if data_dict.get("url_type") == "datastore" or "_datastore_only_resource" in (
+        data_dict.get("url") or ""
     ):
         log.debug("Dump files are managed with the Datastore API")
-        p.toolkit.get_action("aircan_status_update")(
+        p.toolkit.get_action("preflow_status_update")(
             context,
             {
                 "resource_id": data_dict.get("id", ""),
@@ -56,14 +39,35 @@ def preflow_submit(context: Context, data_dict: dict[str, str]) -> dict[str, str
             },
         )
 
+    data_dict["schema"] = {
+        "fields": [
+            {"name": "field1", "type": "integer"},
+            {"name": "First Name", "type": "string"},
+            {"name": "Last Name", "type": "string"},
+            {"name": "Gender", "type": "string"},
+            {"name": "Country", "type": "string"},
+            {"name": "Age", "type": "integer"},
+            {"name": "Date", "type": "string"},
+            {"name": "Id", "type": "integer"},
+        ]
+    }
+
     flow_payload = {
-        "parameters": {},
+        "parameters": {
+            "resource_dict": data_dict,
+            "ckan_config": {
+                "ckan_url": tk.config.get("ckan.site_url"),
+                "api_key": tk.config.get("ckanext.preflow.api_key", ""),
+                "datastore_db_url": tk.config.get("ckan.datastore.write_url", ""),
+            },
+        },
         "tags": [],
         "state": {
             "type": "SCHEDULED",
             "message": "",
         },
     }
+
     deployment_id = tk.config.get("ckanext.preflow.prefect_deployment_id")
     prefect_api_url = tk.config.get(
         "ckanext.preflow.prefect_api_url", "http://127.0.0.1:4200/api"
