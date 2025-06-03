@@ -45,8 +45,8 @@
     {% for item in status.logs.logs_entry %}
       <li class="item no-avatar">
         <span class="fa-stack fa-lg">
-          <i class="fa fa-circle fa-stack-2x icon"></i>
-          <i class="fa fa-pencil fa-stack-1x fa-inverse"></i>
+          <i class="fa fa-circle fa-stack-2x icon text-info"></i>
+          <i class="fa fa-info-circle fa-stack-1x fa-inverse"></i>
         </span>
         {% for line in item.message.strip().split('\n') %}
           {{ line | urlize }}<br />
@@ -63,7 +63,7 @@
             text-success
           {% elif status.state == 'running' %}
             text-info
-          {% elif status.state == 'pending' %}
+          {% elif status.stat e == 'pending' %}
             text-warning
           {% elif status.state == 'failed' %}
             text-danger
@@ -76,9 +76,9 @@
         {% if status.state == 'completed' %}
           <i class="fa fa-check fa-stack-1x fa-inverse"></i>
         {% elif status.state == 'running' %}
-          <i class="fa fa-spinner fa-stack-1x fa-inverse"></i>
+          <i class="fa fa-spinner fa-stack-1x fa-inverse fa-spin"></i>
         {% elif status.state == 'pending' %}
-          <i class="fa fa-clock-o fa-stack-1x fa-inverse"></i>
+          <i class="fa fa-clock fa-stack-1x fa-inverse "></i>
         {% elif status.state == 'failed' %}
           <i class="fa fa-times fa-stack-1x fa-inverse"></i>
         {% elif status.state == 'scheduled' %}
