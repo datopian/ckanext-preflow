@@ -2,27 +2,18 @@ from ckan.types import Any, Action, AuthFunction, Schema
 
 import logging
 
-
 import ckan.plugins as p
 import ckan.plugins.toolkit as tk
 import ckan.model as model
 
 from ckanext.preflow.logic import action, auth
 from ckanext.preflow.views import preflow
+from ckanext.preflow import helpers
 
 
 DEFAULT_FORMATS = [
     "csv",
-    "xls",
-    "xlsx",
     "tsv",
-    "ssv",
-    "tab",
-    "ods",
-    "geojson",
-    "shp",
-    "qgis",
-    "zip",
 ]
 
 log = logging.getLogger(__name__)
@@ -35,6 +26,7 @@ class PreflowPlugin(p.SingletonPlugin):
     p.implements(p.IResourceUrlChange)
     p.implements(p.IResourceController, inherit=True)
     p.implements(p.IBlueprint)
+    p.implements(p.ITemplateHelpers)
 
     # IConfigurer
     def update_config(self, config_):
@@ -98,7 +90,13 @@ class PreflowPlugin(p.SingletonPlugin):
             "preflow_hook": action.preflow_hook,
             "preflow_status_update": action.preflow_status_update,
         }
-
+    # ITemplateHelpers
+    def get_helpers(self) -> dict[str, Any]:
+        return {
+            "get_preflow_badge": helpers.get_preflow_badge,
+        }
+    
+    # IBlueprint
     def get_blueprint(self):
         return preflow
 
@@ -106,23 +104,24 @@ class PreflowPlugin(p.SingletonPlugin):
         context = {"model": model, "ignore_auth": True, "defer_commit": True}
         resource_format = resource_dict.get("format")
 
-        supported_formats = tk.config.get(
-            "ckanext.preflow.supported_formats", DEFAULT_FORMATS
-        )
-        supported_formats = [
-            fmt.strip().lower() for fmt in supported_formats.split(",") if fmt.strip()
-        ]
-
-        submit = resource_format and resource_format.lower() in supported_formats
-
-        if not submit:
-            return
+        config_formats = tk.config.get("ckanext.preflow.supported_formats", "").strip()
+        
+        # Use DEFAULT_FORMATS if config_formats is empty or invalid
+        if config_formats:
+            supported_formats = [
+                fmt.lower() for fmt in config_formats.split(" ") if fmt.strip()
+            ]
         else:
-            log.info(
-                "Submitting resource %s to Prefect for processing",
-                resource_dict.get("id"),
-            )
-            tk.get_action("preflow_submit")(
-                context,
-                resource_dict,
-            )
+            supported_formats = DEFAULT_FORMATS
+
+        if not resource_format or resource_format.lower() not in supported_formats:
+            return
+ 
+        log.info(
+            "Submitting resource %s to Prefect for processing",
+            resource_dict.get("id"),
+        )
+        tk.get_action("preflow_submit")(
+            context,
+            resource_dict,
+        )

@@ -1,0 +1,36 @@
+{% extends "package/resource_edit_base.html" %}
+{% import 'macros/form.html' as form %}
+
+{% block styles %}
+  {{ super() }} 
+  {% asset 'preflow/preflow-validation-css' %}
+{% endblock %}
+
+{% block subtitle %}{{ h.dataset_display_name(pkg) }} - {{ h.resource_display_name(res) }}{% endblock %}
+
+{% block primary_content_inner %}
+  {% if validation_report %}
+    {% if validation_report.get('valid') %}
+      <div class="alert alert-success">
+        <p>{{ _('The data records are valid. No issues were detected during validation.') }}</p>
+      </div>
+    {% else %}
+      <div class="alert alert-danger">
+        <p>{{ _('The data records are invalid. Please review the validation issues listed below.') }}</p>
+      </div>
+    {% endif %}
+    <div id="validation-report" data-module="validation-report"  data-module-report='{{ validation_report | tojson }}''></div>
+  {% else %}
+    <div class="alert alert-info">
+      <p>{{ _('No validation report available for this resource.') }}</p>
+    </div>
+  {% endif %}
+{% endblock %}
+
+
+{% block scripts %}
+  {{ super() }} 
+  {% asset 'preflow/preflow-validation-js' %}
+</script>
+{% endblock %}
+

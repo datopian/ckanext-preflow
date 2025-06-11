@@ -1,0 +1,6 @@
+{% ckan_extends %}
+
+{% block resource_read_url %}
+  {{ h.get_preflow_badge(res.id) | safe }}
+  {{ super() }}
+{% endblock %}

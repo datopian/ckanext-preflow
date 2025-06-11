@@ -12,3 +12,16 @@
 #   output: ckanext-preflow/%(version)s-preflow.css
 #   contents:
 #     - css/preflow.css
+
+preflow-validation-css:
+  filter: cssrewrite
+  output: ckanext-preflow/%(version)s-preflow-validation.css
+  contents:
+    - frictionless-components.css
+
+preflow-validation-js:
+  filter: rjsmin
+  output: ckanext-preflow/%(version)s-preflow-validation.js
+  contents:
+    - frictionless-components.js
+    - validation.js 

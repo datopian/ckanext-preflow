@@ -39,18 +39,13 @@ def preflow_submit(context: Context, data_dict: dict[str, str]) -> dict[str, str
             },
         )
 
-    data_dict["schema"] = {
-        "fields": [
-            {"name": "field1", "type": "integer"},
-            {"name": "First Name", "type": "string"},
-            {"name": "Last Name", "type": "string"},
-            {"name": "Gender", "type": "string"},
-            {"name": "Country", "type": "string"},
-            {"name": "Age", "type": "integer"},
-            {"name": "Date", "type": "string"},
-            {"name": "Id", "type": "integer"},
-        ]
-    }
+
+    if isinstance(data_dict.get("schema"), str):
+        try:
+            data_dict["schema"] = json.loads(data_dict["schema"])
+        except json.JSONDecodeError as e:
+            log.error("Raw schema string: %s", data_dict["schema"])
+
 
     flow_payload = {
         "parameters": {
@@ -94,7 +89,7 @@ def preflow_submit(context: Context, data_dict: dict[str, str]) -> dict[str, str
                 "resource_id": data_dict.get("id", ""),
                 "state": "Pending",
                 "flow_run_id": flow_run_data.get("id"),
-                "message": f"Data ingestion is add to the queue for processing with flow run ID: '{flow_run_data.get('id')}'",
+                "message": f"Data processing is scheduled with Prefect flow run ID: {flow_run_data.get('id')}",
                 "clear": True,
             },
         )
@@ -133,7 +128,7 @@ def preflow_status(context: Context, data_dict: dict[str, str]) -> dict[str, str
     res_id = tk.get_or_bust(data_dict, "resource_id")
 
     task_status = p.toolkit.get_action("task_status_show")(
-        context, {"entity_id": res_id, "task_type": "preflow", "key": "ingestion"}
+        context, {"entity_id": res_id, "task_type": "preflow", "key": "pipeline"}
     )
 
     prefect_api_url = tk.config.get(
@@ -169,10 +164,6 @@ def preflow_status(context: Context, data_dict: dict[str, str]) -> dict[str, str
     return task_status
 
 
-def preflow_hook(context: Context, data_dict: dict[str, str]) -> dict[str, str]:
-    pass
-
-
 def preflow_status_update(
     context: Context, data_dict: dict[str, str]
 ) -> dict[str, str]:
@@ -180,15 +171,16 @@ def preflow_status_update(
     Update the preflow status for a resource, appending log entries.
     """
     now = str(datetime.datetime.utcnow())
-    new_log_entry = {"datetime": now, "message": data_dict.get("message", "")}
+    message = data_dict.get("message", "")
     resource_id = data_dict.get("resource_id")
     flow_run_id = data_dict.get("flow_run_id", "")
     state = data_dict.get("state", "")
     clear_log = data_dict.get("clear", False)
-    key = data_dict.get("key", "ingestion")  # Default key for ingestion tasks
+    key = data_dict.get("key", "pipeline")
+    _type = data_dict.get("type", "info")
+    validation_report = data_dict.get("validation_report")
 
-    # Get previous logs unless clearing
-    logs_entry = []
+    logs, previous_report = [], None
     if not clear_log:
         try:
             value = p.toolkit.get_action("task_status_show")(
@@ -199,26 +191,45 @@ def preflow_status_update(
                     "key": key,
                 },
             ).get("value")
-            flow_run_id = json.loads(value).get("flow_run_id", flow_run_id)
-            logs_entry = json.loads(value).get("logs_entry", []) if value else []
+            if value:
+                parsed = json.loads(value)
+                logs = parsed.get("logs", [])
+                previous_report = parsed.get("validation_report")
         except Exception:
             pass
-    logs_entry.append(new_log_entry)
+
+    validation_report = validation_report or previous_report
+    logs.append({"datetime": now, "message": message})
 
     value = {
         "flow_run_id": flow_run_id,
-        "logs_entry": logs_entry,
+        "logs": logs,
+        **(
+            {"validation_report": validation_report}
+            if validation_report and _type != "error"
+            else {}
+        ),
     }
+
+    error = None
+    if _type == "error":
+        error = {"message": message}
+        if validation_report:
+            error["validation_report"] = validation_report
 
     task_dict = {
         "entity_id": resource_id,
         "entity_type": "resource",
         "task_type": "preflow",
-        "state": state,
+        "state": "failed" if _type == "error" else state,
         "last_updated": data_dict.get("last_updated", now),
         "key": key,
         "value": json.dumps(value),
-        "error": json.dumps(data_dict.get("error")),
+        "error": "" if clear_log else (json.dumps(error) if error else None),
     }
 
     return tk.get_action("task_status_update")(context, task_dict)
+
+
+def preflow_hook(context: Context, data_dict: dict[str, str]) -> dict[str, str]:
+    pass
