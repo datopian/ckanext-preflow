@@ -39,13 +39,7 @@ def preflow_submit(context: Context, data_dict: dict[str, str]) -> dict[str, str
             },
         )
 
-
-    if isinstance(data_dict.get("schema"), str):
-        try:
-            data_dict["schema"] = json.loads(data_dict["schema"])
-        except json.JSONDecodeError as e:
-            log.error("Raw schema string: %s", data_dict["schema"])
-
+    data_dict["schema"] = data_dict.get("schemas", {})
 
     flow_payload = {
         "parameters": {
