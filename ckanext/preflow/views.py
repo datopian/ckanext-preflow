@@ -38,6 +38,9 @@ class ResourcePipelineController(MethodView):
 
         except logic.ValidationError:
             pass
+            tk.h.flash_error(
+                tk._("There was an error submitting the resource for processing.")
+            )
 
         return tk.h.redirect_to(
             controller="preflow",

@@ -121,7 +121,14 @@ class PreflowPlugin(p.SingletonPlugin):
             "Submitting resource %s to Prefect for processing",
             resource_dict.get("id"),
         )
-        tk.get_action("preflow_submit")(
-            context,
-            resource_dict,
-        )
+        try:
+            tk.get_action("preflow_submit")(
+                context,
+                resource_dict,
+            )
+        except Exception as e:
+            log.error(
+                "Failed to submit resource %s to Prefect: %s",
+                resource_dict.get("id"),
+                str(e),
+            )

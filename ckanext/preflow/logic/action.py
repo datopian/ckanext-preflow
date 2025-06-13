@@ -90,7 +90,16 @@ def preflow_submit(context: Context, data_dict: dict[str, str]) -> dict[str, str
         return flow_run_data
     except requests.RequestException as e:
         log.error("Failed to create Prefect flow run: %s", e)
-        raise tk.ValidationError(f"Failed to create Prefect flow run: {e}")
+        tk.get_action("preflow_status_update")(
+            context,
+            {
+                "resource_id": data_dict.get("id", ""),
+                "state": "Failed",
+                "type": "error",
+                "message": f"Failed to create Prefect flow run: {str(e)}",
+                "clear": True,
+            },
+        )
 
 
 @tk.side_effect_free
