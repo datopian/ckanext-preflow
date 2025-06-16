@@ -231,8 +231,45 @@ def preflow_status_update(
         "error": "" if clear_log else (json.dumps(error) if error else None),
     }
 
-    return tk.get_action("task_status_update")(context, task_dict)
+    result = tk.get_action("task_status_update")(context, task_dict)
+    tk.get_action("preflow_hook")(
+        context,
+        {
+            "resource_id": resource_id,
+            "flow_run_id": flow_run_id,
+        },
+    )
+
+    return result
 
 
 def preflow_hook(context: Context, data_dict: dict[str, str]) -> dict[str, str]:
-    pass
+    """
+    Preflow hook to handle resource post submission actions after prflow status update.
+    Generally used to create the views for the resource.
+    """
+
+    res_id = tk.get_or_bust(data_dict, "resource_id")
+
+    tk.check_access("preflow_submit", context, data_dict)
+
+    status = tk.get_action("preflow_status")(
+        context,
+        {"id": res_id, "flow_run_id": data_dict.get("flow_run_id", "")},
+    )
+
+    if status.get("state", "").lower() not in ["completed"]:
+        resource_dict = p.toolkit.get_action("resource_show")(context, {"id": res_id})
+
+        dataset_dict = p.toolkit.get_action("package_show")(
+            context, {"id": resource_dict["package_id"]}
+        )
+
+        p.toolkit.get_action("resource_create_default_resource_views")(
+            context,
+            {
+                "resource": resource_dict,
+                "package": dataset_dict,
+                "create_datastore_views": True,
+            },
+        )
