@@ -11,10 +11,7 @@ from ckanext.preflow.views import preflow
 from ckanext.preflow import helpers
 
 
-DEFAULT_FORMATS = [
-    "csv",
-    "tsv",
-]
+DEFAULT_FORMATS = ["csv", "tsv", "xls", "xlsx"]
 
 log = logging.getLogger(__name__)
 
@@ -90,12 +87,13 @@ class PreflowPlugin(p.SingletonPlugin):
             "preflow_hook": action.preflow_hook,
             "preflow_status_update": action.preflow_status_update,
         }
+
     # ITemplateHelpers
     def get_helpers(self) -> dict[str, Any]:
         return {
             "get_preflow_badge": helpers.get_preflow_badge,
         }
-    
+
     # IBlueprint
     def get_blueprint(self):
         return preflow
@@ -105,7 +103,7 @@ class PreflowPlugin(p.SingletonPlugin):
         resource_format = resource_dict.get("format")
 
         config_formats = tk.config.get("ckanext.preflow.supported_formats", "").strip()
-        
+
         # Use DEFAULT_FORMATS if config_formats is empty or invalid
         if config_formats:
             supported_formats = [
@@ -114,9 +112,12 @@ class PreflowPlugin(p.SingletonPlugin):
         else:
             supported_formats = DEFAULT_FORMATS
 
+        print("Supported formats:", supported_formats)
+        print("Resource format:", resource_format)
+
         if not resource_format or resource_format.lower() not in supported_formats:
             return
- 
+
         log.info(
             "Submitting resource %s to Prefect for processing",
             resource_dict.get("id"),
