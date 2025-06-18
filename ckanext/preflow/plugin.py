@@ -111,10 +111,6 @@ class PreflowPlugin(p.SingletonPlugin):
             ]
         else:
             supported_formats = DEFAULT_FORMATS
-
-        print("Supported formats:", supported_formats)
-        print("Resource format:", resource_format)
-
         if not resource_format or resource_format.lower() not in supported_formats:
             return
 
