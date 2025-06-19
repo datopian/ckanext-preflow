@@ -1,7 +1,6 @@
 {% ckan_extends %}
 
 {% block inner_primary_nav %}
-  {{ super() }}
     {{ h.build_nav_icon('preflow.resource_pipeline', _('Data Pipeline'), id=pkg.name, resource_id=res.id, icon='database') }}
     {{ h.build_nav_icon('preflow.validation_report', _('Validation Report'), id=pkg.name, resource_id=res.id, icon='tasks') }}
 {% endblock %}
