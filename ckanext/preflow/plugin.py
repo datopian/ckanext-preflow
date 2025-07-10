@@ -32,25 +32,25 @@ class PreflowPlugin(p.SingletonPlugin):
         tk.add_resource("assets", "preflow")
 
     def update_config_schema(self, schema: Schema):
-        not_empty = tk.get_validator("not_empty")
         unicode_safe = tk.get_validator("unicode_safe")
         url_validator = tk.get_validator("url_validator")
         uuid_validator = tk.get_validator("uuid_validator")
+        ignore_missing = tk.get_validator("ignore_missing")
 
         schema.update(
             {
                 "ckanext.preflow.prefect_api_url": [
-                    not_empty,
+                    ignore_missing,
                     unicode_safe,
                     url_validator,
                 ],
-                "ckanext.preflow.prefect_api_key": [not_empty, unicode_safe],
+                "ckanext.preflow.prefect_api_key": [ignore_missing, unicode_safe],
                 "ckanext.preflow.prefect_deployment_id": [
-                    not_empty,
+                    ignore_missing,
                     unicode_safe,
                     uuid_validator,
                 ],
-                "ckanext.preflow.supported_formats": [not_empty, unicode_safe],
+                "ckanext.preflow.supported_formats": [ignore_missing, unicode_safe],
             }
         )
         return schema
