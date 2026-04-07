@@ -1,4 +1,5 @@
 import json
+import datetime
 from flask import Blueprint
 import ckan.plugins.toolkit as tk
 from flask.views import MethodView
@@ -36,10 +37,10 @@ class ResourcePipelineController(MethodView):
                 resource_dict,
             )
 
-        except logic.ValidationError:
-            pass
+        except logic.ValidationError as e:
+            error_msg = e.error_dict.get("resource_id", [""])[0] if e.error_dict else ""
             tk.h.flash_error(
-                tk._("There was an error submitting the resource for processing.")
+                error_msg or tk._("There was an error submitting the resource for processing.")
             )
 
         return tk.h.redirect_to(
@@ -82,12 +83,27 @@ class ResourcePipelineController(MethodView):
             except Exception:
                 preflow_status["error"] = {"message": str(error_val)}
 
+        # Calculate waiting remaining for pending status
+        waiting_seconds = tk.config.get("ckanext.preflow.waiting_seconds", 120)
+        waiting_remaining = 0
+        if preflow_status and preflow_status.get("state", "").lower() == "pending":
+            last_updated = preflow_status.get("last_updated")
+            if last_updated:
+                try:
+                    last_updated_dt = datetime.datetime.fromisoformat(last_updated)
+                    elapsed = (datetime.datetime.utcnow() - last_updated_dt).total_seconds()
+                    if elapsed < waiting_seconds:
+                        waiting_remaining = int(waiting_seconds - elapsed)
+                except (ValueError, TypeError):
+                    pass
+
         return tk.render(
             "resource_pipeline.html",
             extra_vars={
                 "status": preflow_status,
                 "pkg_dict": pkg_dict,
                 "resource": resource,
+                "waiting_remaining": waiting_remaining,
             },
         )
 

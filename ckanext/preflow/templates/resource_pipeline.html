@@ -9,9 +9,32 @@
 
 <form method="post" action="{{ action }}" class="datapusher-form mb-3 d-inline-block">
   {{ h.csrf_input() }}
+  {% if waiting_remaining > 0 %}
+  <button class="btn btn-primary" id="pipeline-btn" name="save" type="submit" disabled>
+    <i class="fa fa-diagram-project"></i> {{ _('Wait') }} <span id="waiting-timer">{{ waiting_remaining }}</span>s
+  </button>
+  <script>
+    (function() {
+      var remaining = {{ waiting_remaining }};
+      var btn = document.getElementById('pipeline-btn');
+      var timer = document.getElementById('waiting-timer');
+      var interval = setInterval(function() {
+        remaining--;
+        if (remaining <= 0) {
+          clearInterval(interval);
+          btn.disabled = false;
+          btn.innerHTML = '<i class="fa fa-diagram-project"></i> {{ _("Run Data Pipeline") }}';
+        } else {
+          timer.textContent = remaining;
+        }
+      }, 1000);
+    })();
+  </script>
+  {% else %}
   <button class="btn btn-primary" name="save" type="submit">
     <i class="fa fa-diagram-project"></i> {{ _('Run Data Pipeline') }}
   </button>
+  {% endif %}
 </form>
 
 {% if status.error %}

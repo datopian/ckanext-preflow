@@ -25,6 +25,35 @@ def preflow_submit(context: Context, data_dict: dict[str, str]) -> dict[str, str
     log.debug("Submitting Prefect flow with parameters: %s", data_dict)
     tk.check_access("preflow_submit", context, data_dict)
 
+    # Waiting: prevent resubmission within 2 minutes of a Pending status
+    waiting_seconds = tk.config.get("ckanext.preflow.waiting_seconds", 120)
+    resource_id = data_dict.get("id", "")
+    try:
+        existing_status = p.toolkit.get_action("task_status_show")(
+            context,
+            {
+                "entity_id": resource_id,
+                "task_type": "preflow",
+                "key": "pipeline",
+            },
+        )
+        if existing_status.get("state", "").lower() == "pending":
+            last_updated = existing_status.get("last_updated")
+            if last_updated:
+                last_updated_dt = datetime.datetime.fromisoformat(last_updated)
+                elapsed = (datetime.datetime.utcnow() - last_updated_dt).total_seconds()
+                if elapsed < waiting_seconds:
+                    remaining = int(waiting_seconds - elapsed)
+                    raise tk.ValidationError(
+                        {
+                            "resource_id": [
+                                f"Pipeline is already pending. Please wait {remaining} seconds before resubmitting."
+                            ]
+                        }
+                    )
+    except tk.ObjectNotFound:
+        pass
+
     if data_dict.get("url_type") == "datastore" or "_datastore_only_resource" in (
         data_dict.get("url") or ""
     ):
@@ -57,10 +86,9 @@ def preflow_submit(context: Context, data_dict: dict[str, str]) -> dict[str, str
         },
     }
 
-    deployment_id = tk.config.get("ckanext.preflow.prefect_deployment_id")
-    prefect_api_url = tk.config.get(
-        "ckanext.preflow.prefect_api_url", "http://127.0.0.1:4200/api"
-    )
+    deployment_id = "b6288ef2-8302-45a0-98ec-7007e9599c27"
+
+    prefect_api_url = "http://127.0.0.1:4200/api"
     prefect_api_key = tk.config.get("ckanext.preflow.prefect_api_key")
 
     headers = {"Content-Type": "application/json"}
