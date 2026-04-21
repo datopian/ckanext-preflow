@@ -86,9 +86,9 @@ def preflow_submit(context: Context, data_dict: dict[str, str]) -> dict[str, str
         },
     }
 
-    deployment_id = "b6288ef2-8302-45a0-98ec-7007e9599c27"
+    deployment_id = tk.config.get("ckanext.preflow.prefect_deployment_id")
 
-    prefect_api_url = "http://127.0.0.1:4200/api"
+    prefect_api_url = tk.config.get("ckanext.preflow.prefect_api_url")
     prefect_api_key = tk.config.get("ckanext.preflow.prefect_api_key")
 
     headers = {"Content-Type": "application/json"}

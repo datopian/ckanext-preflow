@@ -31,29 +31,6 @@ class PreflowPlugin(p.SingletonPlugin):
         tk.add_public_directory(config_, "public")
         tk.add_resource("assets", "preflow")
 
-    def update_config_schema(self, schema: Schema):
-        unicode_safe = tk.get_validator("unicode_safe")
-        url_validator = tk.get_validator("url_validator")
-        uuid_validator = tk.get_validator("uuid_validator")
-        ignore_missing = tk.get_validator("ignore_missing")
-
-        schema.update(
-            {
-                "ckanext.preflow.prefect_api_url": [
-                    ignore_missing,
-                    unicode_safe,
-                    url_validator,
-                ],
-                "ckanext.preflow.prefect_api_key": [ignore_missing, unicode_safe],
-                "ckanext.preflow.prefect_deployment_id": [
-                    ignore_missing,
-                    unicode_safe,
-                    uuid_validator,
-                ],
-                "ckanext.preflow.supported_formats": [ignore_missing, unicode_safe],
-            }
-        )
-        return schema
 
     # IResourceUrlChange
     def notify(self, resource: model.Resource):
